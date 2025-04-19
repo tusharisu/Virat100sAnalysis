@@ -1,26 +1,22 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import os
 
 st.set_page_config(page_title="Virat Kohli 100s Analyzer", layout="wide")
 st.title("🏏 Virat Kohli 100s — Offline Analyzer")
-st.caption("Explore Kohli's centuries with filters and charts. No API needed.")
+st.caption("Auto-loaded data from backend (no file upload needed!)")
 
-# 📤 Upload CSV
-data_file = st.file_uploader("📤 Upload your 'Virat_Kohli_100s.csv'", type=["csv"])
+# 🗂 Load the CSV from backend
+DATA_FILE = "Virat_Kohli_100s.csv"
 
-if data_file:
-    df = pd.read_csv(data_file)
+if os.path.exists(DATA_FILE):
+    df = pd.read_csv(DATA_FILE)
 
-    # 🧾 Show column names for reference
-    st.markdown("### 🧾 Column Names in File")
-    st.write(df.columns.tolist())
-
-    # Extract year if not already present
+    # Clean and prepare
     if "Year" not in df.columns and "Date" in df.columns:
         df["Year"] = pd.to_datetime(df["Date"], errors='coerce').dt.year
 
-    # Clean Score column (remove "*" and convert to int)
     df["Score"] = df["Score"].astype(str).str.replace("*", "", regex=False).astype(int)
 
     st.subheader("📋 Raw Data Preview")
@@ -28,17 +24,15 @@ if data_file:
 
     # Sidebar filters
     st.sidebar.header("🔍 Filters")
-
     formats = st.sidebar.multiselect("Format", df["Format"].unique(), default=df["Format"].unique())
-    years = st.sidebar.multiselect("Year", sorted(df["Year"].dropna().unique()),
-                                   default=sorted(df["Year"].dropna().unique()))
+    years = st.sidebar.multiselect("Year", sorted(df["Year"].dropna().unique()), default=sorted(df["Year"].dropna().unique()))
     opponents = st.sidebar.multiselect("Against", df["Against"].unique(), default=df["Against"].unique())
 
     filtered_df = df[
         df["Format"].isin(formats) &
         df["Year"].isin(years) &
         df["Against"].isin(opponents)
-        ]
+    ]
 
     st.subheader(f"📊 Filtered Data — {len(filtered_df)} Centuries")
     st.dataframe(filtered_df)
@@ -67,4 +61,4 @@ if data_file:
     st.plotly_chart(fig3, use_container_width=True)
 
 else:
-    st.info("Upload your CSV to get started!")
+    st.error(f"CSV file not found at `{DATA_FILE}`. Please add it to your repo.")
